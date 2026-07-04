@@ -1,2 +1,2 @@
 import socket 
-s = socket.socket(socket.AF_INRT, socket.SOCK_STREAM)
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
