@@ -8,7 +8,15 @@ def create_socket(socket):
     socket.listen(5)
     print("Server is listening on address 127.0.0.1 / localhost")
 
+    client_socket, client_address = socket.accept()
+    print(f"Connection established with {client_address}")
+
+    raw_request = client_socket.recv(1024)
+    request_text = raw_request.decode("utf-8")
+    client_request_path = request_text.split(" ")[1]
+    return client_request_path
+
 
 if __name__ == "__main__":
     first_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    create_socket(first_socket)
+    print(create_socket(first_socket))
