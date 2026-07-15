@@ -38,20 +38,23 @@ def thread_function(client_socket, client_address):
     client_socket.send(response_text.encode('utf-8'))
     client_socket.close()
 
-
-if __name__ == "__main__":
-    socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    socket.bind(('127.0.0.1', 8080))
-    socket.listen(5) #might not matter due to threading
+def main():
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind(('127.0.0.1', 8080))
+    server_socket.listen(5) #might not matter due to threading
     print('Server listen on 127.0.0.1, port 8080')
 
     threads = list()
     while True:
         try:
-            client_socket, client_address = socket.accept()
+            client_socket, client_address = server_socket.accept()
             new_thread = threading.Thread(target=thread_function, args=(client_socket, client_address))
             threads.append(new_thread)
             new_thread.start()
 
         except Exception as e:
             print(f"Error occured: {e}")
+
+
+if __name__ == "__main__":
+    main()
