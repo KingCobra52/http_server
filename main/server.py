@@ -26,17 +26,23 @@ def determine_response(path):
 #spawns a new thread for the client_socket
 #the new thread will handle decoding the data from the client, crafting a response, and sending the response back to the client
 def thread_function(client_socket, client_address):
-    raw_request = client_socket.recv(1024)
-    request_text = raw_request.decode('utf-8')
+    try:
+        raw_request = client_socket.recv(1024)
+        request_text = raw_request.decode('utf-8')
 
-    print(f"Received request from {client_address}: \n{request_text}\n")
+        print(f"Received request from {client_address}: \n{request_text}\n")
 
-    path = request_text.split(" ")[1]
+        path = request_text.split(" ")[1]
 
-    response_text = determine_response(path)
+        response_text = determine_response(path)
 
-    client_socket.send(response_text.encode('utf-8'))
-    client_socket.close()
+        client_socket.send(response_text.encode('utf-8'))
+
+        client_socket.close()
+
+    except Exception as e:
+        print(f"Error occured in a thread: {e}")
+        client_socket.close()
 
 def main():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
