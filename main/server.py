@@ -1,4 +1,3 @@
-import threading
 import socket
 from concurrent.futures import ThreadPoolExecutor
 
@@ -47,25 +46,23 @@ def thread_function(client_socket, client_address):
 
 def main():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server_socket.bind(('127.0.0.1', 8080))
-    server_socket.listen(5) #might not matter due to threading
+    server_socket.listen(1000) #might not matter due to threading
     print('Server listen on 127.0.0.1, port 8080')
 
-    threads = list()
+    pool_executor = ThreadPoolExecutor(max_workers=32)
+
     while True:
         try:
             client_socket, client_address = server_socket.accept()
-            # new_thread = threading.Thread(target=thread_function, args=(client_socket, client_address))
-            # threads.append(new_thread)
-            # new_thread.start()
-
             #use ThreadPool executor with .submit to speed up threading instead of having to spawn new_thread everytime
-            # 32 workers max, rest of requests have to be put in a quene
-
+            # 32 workers max, rest of requests have to be put in a quene that automatically spawns
+            pool_executor.submit(thread_function, client_socket, client_address)
 
         except Exception as e:
             print(f"Error occured: {e}")
-
+            pool_executor.shutdown(wait=True)
 
 if __name__ == "__main__":
     main()
