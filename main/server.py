@@ -1,5 +1,6 @@
 import threading
 import socket
+from concurrent.futures import ThreadPoolExecutor
 
 #determines response to the client based on the path
 #we never see the response ourselves / can't test it through the browser
@@ -54,9 +55,13 @@ def main():
     while True:
         try:
             client_socket, client_address = server_socket.accept()
-            new_thread = threading.Thread(target=thread_function, args=(client_socket, client_address))
-            threads.append(new_thread)
-            new_thread.start()
+            # new_thread = threading.Thread(target=thread_function, args=(client_socket, client_address))
+            # threads.append(new_thread)
+            # new_thread.start()
+
+            #use ThreadPool executor with .submit to speed up threading instead of having to spawn new_thread everytime
+            # 32 workers max, rest of requests have to be put in a quene
+
 
         except Exception as e:
             print(f"Error occured: {e}")
