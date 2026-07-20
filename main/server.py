@@ -1,8 +1,8 @@
 import socket
-from concurrent.futures import ThreadPoolExecutor
+import asyncio
+#should be a task on every accept -> that's what acts as threading to respond back to the client
 
 #determines response to the client based on the path
-#we never see the response ourselves / can't test it through the browser
 def determine_response(path):
     if path == "/":
         status_line = "HTTP/1.1 200 OK"
@@ -23,11 +23,12 @@ def determine_response(path):
 
     return response_text
 
-#spawns a new thread for the client_socket
-#the new thread will handle decoding the data from the client, crafting a response, and sending the response back to the client
-def thread_function(client_socket, client_address):
+#ran as a task -> independently schedulable by the loop
+#have to await to get results
+async def thread_function(client_socket, client_address):
+    loop = asyncio.get_running_loop()
     try:
-        raw_request = client_socket.recv(1024)
+        raw_request = await loop.sock_recv(client_socket, 1024)
         request_text = raw_request.decode('utf-8')
 
         print(f"Received request from {client_address}: \n{request_text}\n")
@@ -36,33 +37,32 @@ def thread_function(client_socket, client_address):
 
         response_text = determine_response(path)
 
-        client_socket.send(response_text.encode('utf-8'))
-
-        client_socket.close()
+        await loop.sock_sendall(client_socket, response_text.encode())
 
     except Exception as e:
-        print(f"Error occured in a thread: {e}")
+        print(f"Error occured in a task: {e}")
+        client_socket.close()
+    finally:
         client_socket.close()
 
-def main():
+async def main():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server_socket.bind(('127.0.0.1', 8080))
     server_socket.listen(1000) #might not matter due to threading
+    server_socket.setblocking(False)
     print('Server listen on 127.0.0.1, port 8080')
 
-    pool_executor = ThreadPoolExecutor(max_workers=32)
+    loop = asyncio.get_running_loop()
 
     while True:
         try:
-            client_socket, client_address = server_socket.accept()
-            #use ThreadPool executor with .submit to speed up threading instead of having to spawn new_thread everytime
-            # 32 workers max, rest of requests have to be put in a quene that automatically spawns
-            pool_executor.submit(thread_function, client_socket, client_address)
+            client_socket, client_address = await loop.sock_accept(server_socket)
+            client_socket.setblocking(False)
+            asyncio.create_task(thread_function(client_socket, client_address))
 
         except Exception as e:
             print(f"Error occured: {e}")
-            pool_executor.shutdown(wait=True)
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
